@@ -1,0 +1,46 @@
+body {
+  font-family: Arial;
+  background: #ffe6f0;
+  padding: 10px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  background: white;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  text-align: center;
+  padding: 5px;
+}
+
+th {
+  background: #ff4da6;
+  color: white;
+}
+
+input[type="checkbox"] {
+  transform: scale(1.2);
+}
+
+.table-container {
+  overflow-x: scroll;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: #ff4da6;
+  display: flex;
+  justify-content: space-around;
+  padding: 10px;
+}
+
+.bottom-nav a {
+  color: white;
+  font-size: 22px;
+  text-decoration: none;
+}
