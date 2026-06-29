@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Habit Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body {
+    margin:0;
+    font-family: Arial;
+    background:#fff0f5;
+}
+
+/* HEADER */
+header {
+    text-align:center;
+    padding:15px;
+    font-size:22px;
+    background:#ff6fa5;
+    color:white;
+}
+
+/* PAGES */
+.page {
+    display:none;
+    padding:15px;
+    padding-bottom:80px;
+}
+
+.active { display:block; }
+
+/* TABLE */
+table {
+    border-collapse: collapse;
+    width:100%;
+    background:white;
+}
+
+th, td {
+    border:1px solid #ddd;
+    padding:5px;
+    text-align:center;
+}
+
+th { background:#ffd1dc; }
+
+.task-col {
+    background:#ffb6c1;
+}
+
+/* INPUT */
+input, select, button {
+    padding:8px;
+    margin:5px;
+    border-radius:8px;
+    border:1px solid #ccc;
+}
+
+button {
+    background:#ff6fa5;
+    color:white;
+    border:none;
+}
+
+.ai-box{
+    background:#ffe4ec;
+    padding:15px;
+    border-radius:15px;
+    text-align:center;
+    margin-top:20px;
+}
+
+.ai-box input{
+    width:80%;
+    padding:10px;
+    border:none;
+    border-radius:10px;
+    margin-bottom:10px;
+}
+
+.ai-box button{
+    background:#ff4d88;
+    color:white;
+    border:none;
+    padding:10px 20px;
+    border-radius:10px;
+    cursor:pointer;
+}
+
+.ai-box button:hover{
+    background:#ff1a66;
+}
+
+/* BOTTOM NAV */
+.bottom-nav {
+    position:fixed;
+    bottom:0;
+    width:100%;
+    display:flex;
+    justify-content:space-around;
+    background:white;
+    border-top:2px solid #ffd1dc;
+}
+
+.bottom-nav button {
+    flex:1;
+    padding:10px;
+    border:none;
+    background:none;
+    font-size:18px;
+}
+
+.bottom-nav button.active {
+    color:#ff3d7f;
+    font-weight:bold;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>💖 ROUTINE TRACKER</header>
+
+<!-- HOME -->
+<div id="home" class="page active">
+
+<h3>Select Month</h3>
+
+<select id="monthSelect" onchange="generateTable()">
+<option value="0">Jan</option>
+<option value="1">Feb</option>
+<option value="2">Mar</option>
+<option value="3">Apr</option>
+<option value="4">May</option>
+<option value="5" selected>Jun</option>
+</select>
+
+<br>
+
+<input type="text" id="taskInput" placeholder="Add task 💡">
+<button onclick="addTask()">Add</button>
+
+<table id="habitTable"></table>
+
+</div>
+<div class="ai-box">
+    <h2>🤖 Take Review Based On  Your Day</h2>
+
+    <input type="text" id="aiInput" placeholder="Ask AI anything...">
+
+    <button onclick="askAI()">Ask</button>
+
+    <p id="aiResponse"></p>
+</div>
+<!-- DASHBOARD -->
+<div id="dashboard" class="page">
+<h2>📊 Dashboard</h2>
+
+<p>Total Tasks: <b id="totalTasks">0</b></p>
+<p>Completed: <b id="completedTasks">0</b></p>
+<p>Performance: <b id="performance">0%</b></p>
+
+</div>
+
+<!-- REWARDS -->
+<div id="rewards" class="page">
+<h2>🎁 Rewards</h2>
+
+<ul>
+<li>💖 50% → Chocolate</li>
+<li>🔥 70% → Movie</li>
+<li>🏆 90% → Big Treat</li>
+</ul>
+
+</div>
+
+<!-- CHARTS -->
+<div id="charts" class="page">
+<h2>📈 Charts</h2>
+<div style="width:300px; height:300px; margin:auto;">
+    <canvas id="pieChart"></canvas>
+</div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+<button onclick="switchPage('home', this)" class="active">🏠 Home</button>
+<button onclick="switchPage('dashboard', this)">📊 Dashboard</button>
+<button onclick="switchPage('rewards', this)">🎁 Rewards</button>
+<button onclick="switchPage('charts', this)">📈 Charts</button>
+</div>
+
+<script>
+
+let tasks = [];
+let year = 2026;
+
+// SWITCH PAGE
+function switchPage(page, btn){
+    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+    document.getElementById(page).classList.add("active");
+
+    document.querySelectorAll(".bottom-nav button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+
+    if(page==="dashboard") updateDashboard();
+    if(page==="charts") updateCharts();
+}
+
+// TABLE
+function generateTable(){
+
+    let month = document.getElementById("monthSelect").value;
+    let days = new Date(year, parseInt(month)+1, 0).getDate();
+
+    let html = "<tr><th class='task-col'>Task</th>";
+
+    for(let i=1;i<=days;i++) html += "<th>"+i+"</th>";
+    html += "</tr>";
+
+    html += "<tr><th>Day</th>";
+    for(let i=1;i<=days;i++){
+        let d = new Date(year, month, i);
+        let day = d.toLocaleString('en-us',{weekday:'short'});
+        html += "<th>"+day+"</th>";
+    }
+    html += "</tr>";
+
+    tasks.forEach(task=>{
+        html += "<tr>";
+        html += `<td class="task-col">${task.name}</td>`;
+
+        for(let i=1;i<=days;i++){
+            html += `<td><input type="checkbox"></td>`;
+        }
+
+        html += "</tr>";
+    });
+
+    document.getElementById("habitTable").innerHTML = html;
+}
+
+// ADD TASK
+function addTask(){
+    let val = document.getElementById("taskInput").value;
+    if(val.trim()=="") return;
+
+    tasks.push({name:val});
+    document.getElementById("taskInput").value="";
+    generateTable();
+}
+
+async function askAI(){
+
+    let input = document.getElementById("aiInput").value;
+    let output = document.getElementById("aiResponse");
+
+    output.innerText = "Thinking... 🤔";
+
+    try{
+
+        let res = await fetch("http://localhost:3000/ai",{
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body: JSON.stringify({message: input})
+        });
+
+        let data = await res.json();
+
+        console.log(data); // 🔥 DEBUG
+
+        if(data.error){
+            output.innerText = "Error: " + data.error.message;
+            return;
+        }
+
+        output.innerText = data.choices[0].message.content;
+
+    }catch(err){
+        output.innerText = "Server not working 😢";
+        console.log(err);
+    }
+}
+// DASHBOARD
+function updateDashboard(){
+
+    let all = document.querySelectorAll("input[type='checkbox']");
+    let total = all.length;
+    let done = 0;
+
+    all.forEach(c=>{ if(c.checked) done++; });
+
+    let percent = total ? Math.round((done/total)*100) : 0;
+
+    document.getElementById("totalTasks").innerText = total;
+    document.getElementById("completedTasks").innerText = done;
+    document.getElementById("performance").innerText = percent + "%";
+}
+
+// CHARTS
+let pieChart;
+
+function updateCharts(){
+
+    let all = document.querySelectorAll("input[type='checkbox']");
+    let total = all.length;
+    let done = 0;
+
+    all.forEach(c=>{ if(c.checked) done++; });
+
+    let incomplete = total - done;
+
+    // destroy old chart
+    if(pieChart) pieChart.destroy();
+
+    pieChart = new Chart(document.getElementById("pieChart"), {
+        type:'pie',
+        data:{
+            labels:["Completed ✅","Incompleted ❌"],
+            datasets:[{
+                data:[done, incomplete]
+            }]
+        },
+        options:{
+            responsive:true,
+            maintainAspectRatio:false
+        }
+    });
+}
+
+</script>
+
+</body>
+</html>
